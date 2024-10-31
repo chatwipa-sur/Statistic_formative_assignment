@@ -1,0 +1,116 @@
+---
+title: "Formative Assignment_Chatwipa"
+author: "Chatwipa Surapat"
+date: "2024-09-26"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+The main objective of this report is to explore salary levels across two aspects: experience level and employment type, from 2020 to 2022, in order to understand the career progression within the data science sector.
+
+This dataset contains 50 unique job titles related to data science and AI positions consists of 50 countries around the world.
+
+```{r setting, echo=FALSE, include=FALSE}
+library(ggplot2)
+library(scales)
+library(dplyr)
+library(tidyr)
+```
+
+```{r, echo=FALSE}
+setwd("/Users/chatwipa.s/Documents/Data science/02_Statistical Foundations of Data Science/Week 1")
+salaries <- read.csv("ds_salaries.csv")
+```
+
+```{r}
+length(unique(salaries$job_title))
+```
+
+```{r}
+unique(salaries$company_location)
+```
+
+## Salary levels: experience level aspect
+
+Employee experience is the primary factor that influence the salary levels. To explore the salary range a boxplot is used to visualize the minimum and maximum ranges, as well as any outliers.
+
+Before plotting the graph, a new dataframe called *df_salary_plot* is created as a copy of the *salaries* dataframe to avoid overwriting the original data. Next, the experience_level column in the *df_salary_plot* dataframe is converted into a factor, with a specified order, to enhance the visualization in the boxplot.
+
+```{r}
+df_salary_plot <- salaries
+df_salary_plot$company_size <- factor(df_salary_plot$company_size, 
+                                levels = c("S", "M", "L"))
+head(select(df_salary_plot, experience_level, company_size, salary_in_usd),3)
+```
+
+The boxpot is created using the R code below. 
+
+```{r investigation, out.width="70%",fig.align = 'center'}
+ggplot(df_salary_plot, aes(x = factor(experience_level,levels = c("EN", "MI", "SE", "EX")),
+                     y = salary_in_usd)) + 
+  geom_boxplot(aes(fill = company_size)) +
+  scale_y_continuous(labels = label_number(scale = 0.001, suffix = "k")) +
+  scale_x_discrete(labels = c("EN" = "Entry Level",
+                              "MI" = "Mid-level", 
+                              "SE" = "Senior level",
+                              "EX" = "Expert level")) +
+  labs(x = "Experience Level", y = "Salary (USD)") +
+  labs(title = "Salary Distribution by Experience Level in Data Science Sector") +
+  theme_minimal() + 
+  theme(legend.position = "right")
+```
+
+The chart shows that salary trends increase with experience level. At the entry level, company size does not significantly affect salary. However, at higher levels, company size becomes a primary factor influencing salary. At the expert level, salaries in smaller companies vary, and they have the potential for higher earnings. Additionally, some employees have higher salaries compared to their group, as indicated by the outliers shown in the plot.
+
+## Salary levels: employment type aspect
+
+The employment type is one of the factors that job seekers consider when choosing a job, as some individuals require a more flexible work environment for personal reasons. In this part, we will explore the average salary across each employment type using barplot for illustration.
+
+Before plotting the graph, a new dataframe called *df_avg_plot* is created as a copy of the *salaries* dataframe. Then, the data will be grouped and calculated the average of salary value.
+
+```{r}
+df_avg_plot <- salaries %>% 
+  group_by(employment_type, experience_level) %>% 
+  summarise(Avg = mean(salary_in_usd), .groups = 'drop')
+head(df_avg_plot)
+```
+
+The bar chart is created using the R code below.
+
+```{r investigation 2, out.width="70%",fig.align = 'center'}
+ggplot(df_avg_plot, aes(x = employment_type, y = Avg, fill = experience_level)) +
+  scale_fill_manual(values = c("EN" = "orange",
+                               "MI" = "lightblue", 
+                               "SE" = "pink",
+                               "EX" = "darkgreen"),
+                    labels = c("EN" = "Entry Level",
+                               "MI" = "Mid-level", 
+                               "SE" = "Senior level",
+                               "EX" = "Expert level")) +
+  scale_x_discrete(labels = c("PT" = "Part time", "FT" = "Full time", 
+                              "CT" = "Contract", "FL" = "Freelance"),drop = FALSE ) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = paste0(round(Avg / 1000, 1), "k")), 
+            position = position_dodge(width = 0.9), vjust = -0.3, size = 3) + 
+  scale_y_continuous(labels = label_number(scale = 0.001, suffix = "k")) +
+  labs(x = "Employment Type", y = "Average Salary (USD)") +
+  labs(title = "Average Salary by Employment Type and Experience Level in Data Science Sector") +
+  theme_minimal()
+```
+According to the bar chart, the average salary of contract employees at the expert and mid-levels is significantly higher than full-time employees. However, full-time senior employees tend to earn more than those in contract or freelance positions. Additionally, companies do not hire experts for freelance or part-time positions, while mid-level employees are the only group that companies hire in all employment types.
+
+## Conclusion and Discussion
+In conclusion, the company size does not affect to the salary for those who is at entry level and expert level, but for mid-level and senior employees, larger companies tend to offer higher salaries. In addition, the employment type also one of the factor influences salary. Overall, contract employees tend to earn similar or slightly lower salaries than full-time employees at the entry and senior levels, while mid-level and expert-level contract employees generally receive higher pay.
+
+
+
+
+
+
+
