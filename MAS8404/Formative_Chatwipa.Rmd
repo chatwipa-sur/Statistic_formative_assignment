@@ -1,0 +1,178 @@
+---
+title: "Formative Assignment"
+author: "Chatwipa Surapat"
+date: "2024-10-30"
+output:
+  html_document:
+    df_print: paged
+---
+
+<style>
+  h1.title {
+    text-align: center;
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+In this report, we use the `airpollution` data set from the `nclSLR` package for analysis. The data set contains the information about the pollution from 80 US cities with 11 observation variables which mainly focus on the concentration of sulphate, suspended particulate and additional information about demographic.
+
+```{r, include=FALSE}
+library(plyr)
+library(nclSLR)
+data(airpollution)
+```
+
+## Exploratory data analysis
+
+### 1.1 Overview of data
+
+```{r,fig.align = 'center', echo = FALSE, fig.width=6.5, fig.height=6.5}
+par(mar = c(5, 4, 0.5, 2))
+pairs(airpollution,
+      cex = 0.4)
+```
+
+There are three observation variables about sulphate concentration that provided in this data set including smallest of biweekly sulphate (`SMIN`), arithmetic mean of biweekly sulphate (`SMEAN`) and largest of biweekly sulphate (`SMAX`) reading in micrograms per cubic metre (x10). Therefore, we can see the strong positive linear relationship between these three variables.
+
+Similarity, this data set contains the information about suspended particulate including minimum (`PMIN`), mean (`PMEAN`) and maximum (`PMAX`) of biweekly reading in micrograms per cubic metre (x10). Consequently, the pairs plot shows strong linear relation between these three observations.
+
+In addition, there are five variables about demographic that provided in this data set including population density (`PM2`), white people population percentage (`PERWH`), percentage of non-poor families (`NONPOOR`), percentage of elderly people (`GE65`) and logarithm of population (`LPOP`).
+
+```{r}
+colMeans(airpollution)
+```
+
+Overall, we observe a linear relationship between `PMEAN` and `SMEAN`, as well as between `PERWH` and `NONPOOR`. Additionally, there are some redundancy in the data set, therefore, principal component analysis (PCA) will be applied in section 2 to reduce the number of observation variables.
+
+### 1.2 Total variation and generalised variance
+To calculate the total variation, the covariance matrix is calculated and selected only the covariance in diagonal elements before use in the further step.
+
+```{r}
+S <- var(airpollution)
+s_sq <- diag(S)
+s_sq
+```
+
+The total variation is calculated by summation of the diagonal elements of covariance matrix which illustrate below.
+
+```{r}
+total_variation <- sum(s_sq)
+total_variation
+```
+
+In addition, the generalised variance is calculated by taking the determinant to the sample covariance matrix.
+
+```{r}
+generalized_variance <- det(S)
+generalized_variance
+```
+
+From these measure, we can estimate that the data set has high degree of scatter respect to mean of data.
+
+### 1.3 Standardize the data matrix
+
+Refer to the section 1.2, the result suggests that there are some variables that contain large value of variance which might be dominate a PCA based on the covariance matrix. Therefore, PCA based correlation might be the alternative method that appropriate to this data set. To ensure that using correlation matrix instead of covariance matrix is acceptable, this section aims to proof whether the sample covariance matrix of standardized data is equal to the sample correlation matrix of the original data.
+
+```{r}
+scaled_data <- scale(airpollution)
+mean_vector <- colMeans(scaled_data)
+mean_vector
+```
+
+Refer to the result of column mean above, the mean of standardized data is relatively close to zero. Next,the covariance matrix of standardized data and correlation matrix of original data is calculated. The result shows that ratio between covariance matrix and correlation matrix is equal to one, indicating that they have the same values.
+
+```{r}
+cov_matrix_scaled <- var(scaled_data)
+cor_matrix_original <- cor(airpollution)
+cov_matrix_scaled/cor_matrix_original
+```
+
+## Principal component analysis
+
+### 2.1 Select type of PCA
+
+Refer to section 1, the data set contains variables that measured on different scales which cannot be compared each of them directly. Moreover, each variable has its own mean and variance that not close to each other. Therefore, using the PCA based correlation matrix is more appropriate in this data because some variables with larger mean and variance could dominate the PCA analysis result. Refer to section 1.3, the sample correlation matrix is equal to the covariance matrix of standardized data, ensuring that each variable contributes equally to the analysis.
+
+### 2.2 PCA analysis
+
+To perform the PCA analysis, `prcomp` function is used and setting the `scale` as `TRUE` to perform the analysis base on correlation matrix. As a result, the standard devation values are relatively similar in all variables.
+
+```{r}
+pca_result <- prcomp(airpollution, scale = TRUE)
+pca_result$sdev
+```
+
+#### 2.2.1 First principal component
+In the first principal component, variables related to sulphate and suspended particulates have dominant compared to the others.
+
+```{r}
+print(pca_result$rotation[,1])
+```
+The first PC is given by:
+
+$$
+PC1 = \begin{aligned}
+&0.2613624 \, \text{SMIN} + 0.4503394 \, \text{SMEAN} + 0.3988570 \, \text{SMAX} + \\
+&0.3126485 \, \text{PMIN} + 0.3868269 \, \text{PMEAN} + 0.2522820 \, \text{PMAX} + \\
+&0.2404705 \, \text{PM2} + 0.2073243 \, \text{PERWH} + 0.2764271 \, \text{NONPOOR} + \\
+&0.1059282 \, \text{GE65} + 0.2651881 \, \text{LPOP}
+\end{aligned}
+$$
+The coefficient of `SMEAN`, `SMAX`, `PMEAN` and `PMIN` have high magnitudes and share the same sign. This might be interpreted that the first principal component captures the pollutants that contribute the air pollution. The city with high air pollution factors will have the high magnitude score of these variables.
+
+#### 2.2.2 Second principal component
+In the second principal component, variables related to demographic have dominant compared to the others.
+
+```{r}
+print(pca_result$rotation[,2])
+```
+The second PC is given by:
+
+$$
+PC1 = \begin{aligned}
+&0.19024716 \, \text{SMIN} - 0.01348804 \, \text{SMEAN} - 0.13441659 \, \text{SMAX} - \\
+&0.22716515 \, \text{PMIN} - 0.34029207 \, \text{PMEAN} - 0.34479429 \, \text{PMAX} + \\
+&0.14632479 \, \text{PM2} + 0.45946073 \, \text{PERWH} + 0.36544285 \, \text{NONPOOR} + \\
+&0.53990856 \, \text{GE65} + 0.04129927 \, \text{LPOP}
+\end{aligned}
+$$
+The coefficients of `PERWH` and `GE65` show higher values compared to the others, which are related to the demographics of people living in the measured area. Therefore, the second principal component captures a dimension related to demographics. The city that has high proportion of white and elderly residence will present high magnitude values.
+
+#### 2.2.3 Proportion of variation
+To select the appropriate number of principle component, the proportion of variation is calculated using `summary` function.
+
+```{r}
+summary(pca_result)
+```
+The cumulative proportion result shows that the first seven PCs explain mostly all of the variation in the data (96.4%).
+
+```{r,fig.align = 'center', echo = FALSE, out.width = '70%'}
+par(mar = c(5, 4, 1, 2))
+plot(pca_result, type = "l", main = "", ylim = c(0, 5), npcs = 11)
+title(xlab = "Component number")
+```
+However, the scree plot above shows the elbow of the plot present at fifth component and find the flat line after the ninth component. Therefore, the number of selection might vary depends on the objective of model. If the objective is to reduce as much as possible with the reasonable accuracy, using first five components is appropriate because they can explain approximately 80% of data. However, if higher accuracy was required, we must select first seven components because they can explain mostly all of the variation in the data (96.4%). 
+
+#### 2.2.4 Scatter plot of principal components
+To observe the relationship between principal components, the scatter plot between first principal component against second principal component is created below.
+
+```{r,fig.align = 'center', echo = FALSE, fig.width=8, fig.height=5.5}
+par(mar = c(5, 4, 1, 2))
+plot(pca_result$x[, 1], pca_result$x[, 2],
+     xlab = "First PC (Pollutants)", ylab = "Second PC (Demographics)")
+text(pca_result$x[, 1], pca_result$x[, 2],
+     labels = rownames(USArrests), 
+     cex = 0.7, pos = 2, col = "darkgrey")
+```
+Based on the scatter plot, cities in the U.S. mostly located at the center of the chart, suggesting that they have moderate levels of pollutants and balance of resident proportion. There are some cities such as New Jersey and Kentucky that have high proportions of white and elderly people and high pollutants levels. Arkansas is located at the upper right corner which also indicating that it has high proportions of white and elderly people living in this city, as well as high pollutants levels. 
+
+However, there are some cities such as Michigan and Minnesota that located at the bottom left corner, suggesting that they have the lower pollutants and also the proportion of white and elderly resident. On the other hand, Taxas and Wyoming appear in the lower-right corner, indicating that although these cities have low proportions of white and elderly individuals but they have high level of pollutants.
+
+
+
+
+
